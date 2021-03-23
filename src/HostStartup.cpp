@@ -18,7 +18,7 @@ public:
 		// initialise our settings file..
 
 		PropertiesFile::Options options;
-		options.applicationName = "Juce Audio Plugin Host";
+		options.applicationName = "Vivo Audio Plugin Host";
 		options.filenameSuffix = "settings";
 		options.osxLibrarySubFolder = "Preferences";
 
@@ -107,7 +107,7 @@ public:
 		return true;
 	}
 
-	const String getApplicationName() override { return "Juce Plug-In Host"; }
+	const String getApplicationName() override { return "Vivo v1.0 (dev:camenduru)"; }
 	const String getApplicationVersion() override { return ProjectInfo::versionString; }
 	bool moreThanOneInstanceAllowed() override { return true; }
 

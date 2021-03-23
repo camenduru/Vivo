@@ -78,13 +78,13 @@ BEGIN
     BEGIN
         BLOCK "0c0004b0"
         BEGIN
-            VALUE "CompanyName", "TODO: <Company name>"
-            VALUE "FileDescription", "TODO: <File description>"
+            VALUE "CompanyName", "camenduru"
+            VALUE "FileDescription", "Vivo Audio Plugin Host"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "Vivo.exe"
             VALUE "LegalCopyright", "Copyright (C) 2021"
             VALUE "OriginalFilename", "Vivo.exe"
-            VALUE "ProductName", "TODO: <Product name>"
+            VALUE "ProductName", "Vivo"
             VALUE "ProductVersion", "1.0.0.1"
         END
     END
