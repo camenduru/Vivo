@@ -107,7 +107,7 @@ public:
 		return true;
 	}
 
-	const String getApplicationName() override { return "Vivo v1.0 (dev:camenduru)"; }
+	const String getApplicationName() override { return "Vivo v1.1 (dev:camenduru)"; }
 	const String getApplicationVersion() override { return ProjectInfo::versionString; }
 	bool moreThanOneInstanceAllowed() override { return true; }
 

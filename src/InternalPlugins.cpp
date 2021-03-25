@@ -370,22 +370,22 @@ public:
 		: AudioProcessor(BusesProperties().withInput("Input", AudioChannelSet::octagonal())
 			.withOutput("Output", AudioChannelSet::octagonal()))
 	{
-		addParameter(sensitivity = new AudioParameterFloat("sensitivity", "Sensitivity", 0.0f, 0.3f, 0.01f));
-		addParameter(multiplier = new AudioParameterFloat("multiplier", "Multiplier", 0.0f, 100.0f, 0.01f));
+		addParameter(sensitivity = new AudioParameterFloat("sensitivity", "Sensitivity", 0.0f, 0.3f, 0.02f));
+		addParameter(multiplier = new AudioParameterFloat("multiplier", "Multiplier", 0.0f, 100.0f, 10.0f));
+		addParameter(mic1L = new AudioParameterFloat("mic1L", "Mic L RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(mic1R = new AudioParameterFloat("mic1R", "Mic R RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(gain = new AudioParameterFloat("gain", "Out Gain", 0.0f, 1.0f, 0.5f));
+		addParameter(out1L = new AudioParameterFloat("out1L", "Out 1 L RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(out1R = new AudioParameterFloat("out1R", "Out 1 R RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(out2L = new AudioParameterFloat("out2L", "Out 2 L RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(out2R = new AudioParameterFloat("out2R", "Out 2 R RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(out3L = new AudioParameterFloat("out3L", "Out 3 L RMS", 0.0f, 100.0f, 0.0f));
+		addParameter(out3R = new AudioParameterFloat("out3R", "Out 3 R RMS", 0.0f, 100.0f, 0.0f));
+	}
 
-		addParameter(mic1L = new AudioParameterFloat("mic1L", "Mic L RMS", 0.0f, 100.0f, 0.01f));
-		addParameter(mic1R = new AudioParameterFloat("mic1R", "Mic R RMS", 0.0f, 100.0f, 0.01f));
-
-		addParameter(gain = new AudioParameterFloat("gain", "Out Gain", 0.0f, 1.0f, 0.01f));
-
-		addParameter(out1L = new AudioParameterFloat("out1L", "Out 1 L RMS", 0.0f, 100.0f, 0.01f));
-		addParameter(out1R = new AudioParameterFloat("out1R", "Out 1 R RMS", 0.0f, 100.0f, 0.01f));
-
-		addParameter(out2L = new AudioParameterFloat("out2L", "Out 2 L RMS", 0.0f, 100.0f, 0.01f));
-		addParameter(out2R = new AudioParameterFloat("out2R", "Out 2 R RMS", 0.0f, 100.0f, 0.01f));
-
-		addParameter(out3L = new AudioParameterFloat("out3L", "Out 3 L RMS", 0.0f, 100.0f, 0.01f));
-		addParameter(out3R = new AudioParameterFloat("out3R", "Out 3 R RMS", 0.0f, 100.0f, 0.01f));
+	void prepareToPlay(double sampleRate, int samplesPerBlockExpected) override
+	{
+		meterSource.resize(getTotalNumOutputChannels(), sampleRate * 0.1 / samplesPerBlockExpected);
 	}
 
 	//==============================================================================
@@ -395,65 +395,44 @@ public:
 	void processBlock(AudioBuffer<float>& buffer, MidiBuffer&) override
 	{
 		meterSource.measureBlock(buffer);
-
 		auto mic1LRMS = *multiplier * getMeterSource().getRMSLevel(0);
 		auto mic1RRMS = *multiplier * getMeterSource().getRMSLevel(1);
 		mic1L->setValueNotifyingHost(mic1LRMS);
 		mic1R->setValueNotifyingHost(mic1RRMS);
-
 		out1L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(2));
 		out1R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(3));
-		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
-			buffer.applyGain(2, 0, buffer.getNumSamples(), *gain);
-			buffer.applyGain(3, 0, buffer.getNumSamples(), *gain);
-		}
-
 		out2L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(4));
 		out2R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(5));
-		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
-			buffer.applyGain(4, 0, buffer.getNumSamples(), *gain);
-			buffer.applyGain(5, 0, buffer.getNumSamples(), *gain);
-		}
-
 		out3L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(6));
 		out3R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(7));
 		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(2, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(3, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(4, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(5, 0, buffer.getNumSamples(), *gain);
 			buffer.applyGain(6, 0, buffer.getNumSamples(), *gain);
 			buffer.applyGain(7, 0, buffer.getNumSamples(), *gain);
 		}
 	}
 
-	void prepareToPlay(double sampleRate, int samplesPerBlockExpected) override
-	{
-		meterSource.resize(getTotalNumOutputChannels(), sampleRate * 0.1 / samplesPerBlockExpected);
-	}
-
 	void processBlock(AudioBuffer<double>& buffer, MidiBuffer&) override
 	{
 		meterSource.measureBlock(buffer);
-
 		auto mic1LRMS = *multiplier * getMeterSource().getRMSLevel(0);
 		auto mic1RRMS = *multiplier * getMeterSource().getRMSLevel(1);
 		mic1L->setValueNotifyingHost(mic1LRMS);
 		mic1R->setValueNotifyingHost(mic1RRMS);
-
 		out1L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(2));
 		out1R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(3));
-		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
-			buffer.applyGain(2, 0, buffer.getNumSamples(), (float)*gain);
-			buffer.applyGain(3, 0, buffer.getNumSamples(), (float)*gain);
-		}
-
 		out2L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(4));
 		out2R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(5));
-		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
-			buffer.applyGain(4, 0, buffer.getNumSamples(), (float)*gain);
-			buffer.applyGain(5, 0, buffer.getNumSamples(), (float)*gain);
-		}
-
 		out3L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(6));
 		out3R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(7));
 		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(2, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(3, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(4, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(5, 0, buffer.getNumSamples(), (float)*gain);
 			buffer.applyGain(6, 0, buffer.getNumSamples(), (float)*gain);
 			buffer.applyGain(7, 0, buffer.getNumSamples(), (float)*gain);
 		}
