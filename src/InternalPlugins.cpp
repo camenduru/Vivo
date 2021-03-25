@@ -4,6 +4,7 @@
 
 #include "InternalPlugins.h"
 #include "PluginGraph.h"
+#include <ff_meters.h>
 
 //#include "../../../../examples/Plugins/AUv3SynthPluginDemo.h"
 //#include "../../../../examples/Plugins/ArpeggiatorPluginDemo.h"
@@ -295,7 +296,6 @@ private:
 	//==============================================================================
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SineWaveSynth)
 };
-
 //==============================================================================
 class ReverbPlugin : public AudioProcessor
 {
@@ -356,7 +356,162 @@ public:
 private:
 	Reverb reverb;
 };
+//==============================================================================
+class GainProcessor : public AudioProcessor
+{
+public:
+	foleys::LevelMeterSource& getMeterSource()
+	{
+		return meterSource;
+	}
 
+	//==============================================================================
+	GainProcessor()
+		: AudioProcessor(BusesProperties().withInput("Input", AudioChannelSet::octagonal())
+			.withOutput("Output", AudioChannelSet::octagonal()))
+	{
+		addParameter(sensitivity = new AudioParameterFloat("sensitivity", "Sensitivity", 0.0f, 0.3f, 0.01f));
+		addParameter(multiplier = new AudioParameterFloat("multiplier", "Multiplier", 0.0f, 100.0f, 0.01f));
+
+		addParameter(mic1L = new AudioParameterFloat("mic1L", "Mic L RMS", 0.0f, 100.0f, 0.01f));
+		addParameter(mic1R = new AudioParameterFloat("mic1R", "Mic R RMS", 0.0f, 100.0f, 0.01f));
+
+		addParameter(gain = new AudioParameterFloat("gain", "Out Gain", 0.0f, 1.0f, 0.01f));
+
+		addParameter(out1L = new AudioParameterFloat("out1L", "Out 1 L RMS", 0.0f, 100.0f, 0.01f));
+		addParameter(out1R = new AudioParameterFloat("out1R", "Out 1 R RMS", 0.0f, 100.0f, 0.01f));
+
+		addParameter(out2L = new AudioParameterFloat("out2L", "Out 2 L RMS", 0.0f, 100.0f, 0.01f));
+		addParameter(out2R = new AudioParameterFloat("out2R", "Out 2 R RMS", 0.0f, 100.0f, 0.01f));
+
+		addParameter(out3L = new AudioParameterFloat("out3L", "Out 3 L RMS", 0.0f, 100.0f, 0.01f));
+		addParameter(out3R = new AudioParameterFloat("out3R", "Out 3 R RMS", 0.0f, 100.0f, 0.01f));
+	}
+
+	//==============================================================================
+	//void prepareToPlay(double, int) override {}
+	void releaseResources() override {}
+
+	void processBlock(AudioBuffer<float>& buffer, MidiBuffer&) override
+	{
+		meterSource.measureBlock(buffer);
+
+		auto mic1LRMS = *multiplier * getMeterSource().getRMSLevel(0);
+		auto mic1RRMS = *multiplier * getMeterSource().getRMSLevel(1);
+		mic1L->setValueNotifyingHost(mic1LRMS);
+		mic1R->setValueNotifyingHost(mic1RRMS);
+
+		out1L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(2));
+		out1R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(3));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(2, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(3, 0, buffer.getNumSamples(), *gain);
+		}
+
+		out2L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(4));
+		out2R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(5));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(4, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(5, 0, buffer.getNumSamples(), *gain);
+		}
+
+		out3L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(6));
+		out3R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(7));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(6, 0, buffer.getNumSamples(), *gain);
+			buffer.applyGain(7, 0, buffer.getNumSamples(), *gain);
+		}
+	}
+
+	void prepareToPlay(double sampleRate, int samplesPerBlockExpected) override
+	{
+		meterSource.resize(getTotalNumOutputChannels(), sampleRate * 0.1 / samplesPerBlockExpected);
+	}
+
+	void processBlock(AudioBuffer<double>& buffer, MidiBuffer&) override
+	{
+		meterSource.measureBlock(buffer);
+
+		auto mic1LRMS = *multiplier * getMeterSource().getRMSLevel(0);
+		auto mic1RRMS = *multiplier * getMeterSource().getRMSLevel(1);
+		mic1L->setValueNotifyingHost(mic1LRMS);
+		mic1R->setValueNotifyingHost(mic1RRMS);
+
+		out1L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(2));
+		out1R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(3));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(2, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(3, 0, buffer.getNumSamples(), (float)*gain);
+		}
+
+		out2L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(4));
+		out2R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(5));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(4, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(5, 0, buffer.getNumSamples(), (float)*gain);
+		}
+
+		out3L->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(6));
+		out3R->setValueNotifyingHost(*multiplier * getMeterSource().getRMSLevel(7));
+		if (mic1LRMS > *sensitivity || mic1RRMS > *sensitivity) {
+			buffer.applyGain(6, 0, buffer.getNumSamples(), (float)*gain);
+			buffer.applyGain(7, 0, buffer.getNumSamples(), (float)*gain);
+		}
+	}
+
+	//==============================================================================
+	AudioProcessorEditor* createEditor() override { return new GenericAudioProcessorEditor(*this); }
+	bool hasEditor() const override { return true; }
+
+	//==============================================================================
+	const String getName() const override { return "Auto Mixer"; }
+	bool acceptsMidi() const override { return false; }
+	bool producesMidi() const override { return false; }
+	double getTailLengthSeconds() const override { return 0; }
+
+	//==============================================================================
+	int getNumPrograms() override { return 1; }
+	int getCurrentProgram() override { return 0; }
+	void setCurrentProgram(int) override {}
+	const String getProgramName(int) override { return {}; }
+	void changeProgramName(int, const String&) override {}
+
+	//==============================================================================
+	void getStateInformation(MemoryBlock& destData) override
+	{
+		MemoryOutputStream(destData, true).writeFloat(*gain);
+	}
+
+	void setStateInformation(const void* data, int sizeInBytes) override
+	{
+		gain->setValueNotifyingHost(MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readFloat());
+	}
+
+	//==============================================================================
+	bool isBusesLayoutSupported(const BusesLayout& layouts) const override
+	{
+		const auto& mainInLayout = layouts.getChannelSet(true, 0);
+		const auto& mainOutLayout = layouts.getChannelSet(false, 0);
+
+		return (mainInLayout == mainOutLayout && (!mainInLayout.isDisabled()));
+	}
+private:
+	//==============================================================================
+	AudioParameterFloat* gain;
+	AudioParameterFloat* sensitivity;
+	AudioParameterFloat* mic1L;
+	AudioParameterFloat* mic1R;
+	AudioParameterFloat* out1L;
+	AudioParameterFloat* out1R;
+	AudioParameterFloat* out2L;
+	AudioParameterFloat* out2R;
+	AudioParameterFloat* out3L;
+	AudioParameterFloat* out3R;
+	AudioParameterFloat* multiplier;
+	foleys::LevelMeterSource meterSource;
+	//==============================================================================
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GainProcessor)
+};
 //==============================================================================
 
 InternalPluginFormat::InternalPluginFactory::InternalPluginFactory(const std::initializer_list<Constructor>& constructorsIn)
@@ -399,7 +554,7 @@ InternalPluginFormat::InternalPluginFactory::InternalPluginFactory(const std::in
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<AUv3SynthProcessor>()); },
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<Arpeggiator>()); },
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<DspModulePluginDemoAudioProcessor>()); },
-				//[] { return std::make_unique<InternalPlugin>(std::make_unique<GainProcessor>()); },
+				[] { return std::make_unique<InternalPlugin>(std::make_unique<GainProcessor>()); },
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<JuceDemoPluginAudioProcessor>()); },
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<MidiLoggerPluginDemoProcessor>()); },
 				//[] { return std::make_unique<InternalPlugin>(std::make_unique<MultiOutSynth>()); },
